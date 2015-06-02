@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "heap": "^0.2.6",
     "jsdom": "^5.4.2",
     "node-jsdom": "^3.1.5"
   }
