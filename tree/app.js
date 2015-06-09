@@ -1,9 +1,41 @@
 'use strict';
-
 (function() {
+/*
+let Crawler = require('simplecrawler');
+
+let crawler = Crawler.crawl('http://www.kohls.com/');
+crawler.interval = 1000;
+crawler.maxDepth = 1;
+crawler.discoverResources = false;
+
+crawler.on('fetchcomplete', function(queueItem, responseBuffer, response) {
+  console.log('Completed fetching resource:', queueItem.url);
+  //let resume = this.wait();
+  filterUrl(responseBuffer, function(foundURLs) {
+    foundURLs.forEach(crawler.queueURL.bind(crawler));
+    //resume();
+  });
+});
+
+crawler.on('complete', function() {
+  console.log('complete');
+  console.log(arguments);
+  process.exit(0);
+});
+
+crawler.start();
+
+let filterUrl = function(data, fn) {
+  console.log(data.toString());
+}
+return;
+*/
+let fs = require('fs');
+let crypto = require('crypto');
 let util = require('util');
 let jsdom = require('node-jsdom');
 let heapq = require('heap');
+let yargs = require('yargs');
 let log = console.log;
 let pages = [];
 let urls = [
@@ -17,68 +49,9 @@ let urlLimit = 1000;
 let crawlDepth = 6;
 let basePage = 'http://www.kohls.com/';
 
-let lcs0 = function(str1, str2) {
-  // init max value
-  var longestCommonSubstring = 0;
-  // init 2D array with 0
-  var table = [],
-      len1 = str1.length,
-      len2 = str2.length,
-      row, col;
-  for (row = 0; row <= len1; row++) {
-    table[row] = [];
-    for (col = 0; col <= len2; col++) {
-      table[row][col] = 0;
-    }
-  }
-  // fill table
-  var i, j;
-  for (i = 0; i < len1; i++) {
-    for (j = 0; j < len2; j++) {
-      if (str1[i] == str2[j]) {
-        if (table[i][j] == 0) {
-          table[i+1][j+1] = 1;
-        } else {
-          table[i+1][j+1] = table[i][j] + 1;
-        }
-        if (table[i+1][j+1] > longestCommonSubstring) {
-          longestCommonSubstring = table[i+1][j+1];
-        }
-      } else {
-        table[i+1][j+1] = 0;
-      }
-    }
-  }
-  return longestCommonSubstring;
-};
+let argv = yargs.usage('Usage: $0 --save-tree [string] --full-tree --save-doc [string] --local-doc [string] --keep-html').argv;
 
-let lcs_greedy = function(x,y) {
-  var symbols = {},i,
-    r=0,p=0,p1,L=0,idx,
-    m=x.length,n=y.length,
-    S = new Buffer(m<n?n:m);
-  p1 = popsym(0);
-  for(i=0;i < m;i++){
-    p = (r===p)?p1:popsym(i);
-    p1 = popsym(i+1);
-    idx=(p > p1)?(i++,p1):p;
-    if(idx===n){p=popsym(i);}
-    else{
-      r=idx;
-      S[L++]=x.charCodeAt(i);
-    }
-  }
-  return S.toString('utf8',0,L);
- 
-  function popsym(index){
-    var s = x[index],
-      pos = symbols[s]+1;
-    pos = y.indexOf(s,pos>r?pos:r);
-    if(pos===-1){pos=n;}
-    symbols[s]=pos;
-    return pos;
-  }
-};
+log(argv);
 
 let lcs1 = function(x,y) {
   let s,i,j,m,n,
@@ -118,7 +91,21 @@ let lcs1 = function(x,y) {
   return lcs.join('');
 };
 
-let lcs2 = function(rowStr, colStr) {
+let signTokenize = function(str) {
+  let last = 0;
+  return Array.prototype.reduce.call(str, function(pre, char) {
+    if ( char === '[' || char === '.' || char === '#' ) {
+      pre.push(char);
+      last += 1;
+    } else if ( char === ']' ) {
+    } else {
+      pre[last] += char
+    }
+    return pre;
+  }, ['']);
+}
+
+let lcs = function(rowStr, colStr) {
   let cur = 0, prev = 1, i, j;
   let table = [[],[]];
   let lcs = [];
@@ -143,20 +130,110 @@ let lcs2 = function(rowStr, colStr) {
     cur = (cur + 1) % 2;
     prev = (prev + 1) % 2;
   }
-  return lcs.pop();
+  return {str:lcs.pop(), score:table[prev].pop()};
 };
+
+let lcsTokenize = function(rowStr, colStr) {
+  let cur = 0, prev = 1, i, j;
+  let table = [[],[]];
+  let lcs = [];
+  rowStr = signTokenize(rowStr);
+  colStr = signTokenize(colStr);
+  for (i = 0; i <= rowStr.length; i++) {
+    table[0][i] = 0;
+    table[1][i] = 0;
+    lcs[i] = '';
+  }
+  for (i = 0; i < colStr.length; i++) {
+    for (j = 0; j < rowStr.length; j++) {
+      if ( table[prev][j+1] > table[cur][j] ) {
+        table[cur][j+1] = table[prev][j+1];
+      } else {
+        table[cur][j+1] = table[cur][j];
+        lcs[j+1] = lcs[j];
+      }
+      if (colStr[i] === rowStr[j] && (table[prev][j] + 1) > table[cur][j+1] ) {
+        table[cur][j+1] = table[prev][j] + 1;
+        lcs[j+1] = lcs[j] + rowStr[j];
+      }
+    }
+    cur = (cur + 1) % 2;
+    prev = (prev + 1) % 2;
+  }
+  return {str:lcs.pop(), score:table[prev].pop()};
+};
+
+let lcsWeighted = function(rowStr, colStr) {
+  let cur = 0, prev = 1, i, j;
+  let table = [[],[]];
+  let lcs = [];
+  rowStr = signTokenize(rowStr);
+  colStr = signTokenize(colStr);
+  for (i = 0; i <= rowStr.length; i++) {
+    table[0][i] = 0;
+    table[1][i] = 0;
+    lcs[i] = '';
+  }
+  for (i = 0; i < colStr.length; i++) {
+    let score = 1;
+    switch(colStr[0]) {
+      case '.':
+        score = 10;
+        break;
+      case '#':
+        score = 50;
+        break;
+    }
+    for (j = 0; j < rowStr.length; j++) {
+      if ( table[prev][j+1] > table[cur][j] ) {
+        table[cur][j+1] = table[prev][j+1];
+      } else {
+        table[cur][j+1] = table[cur][j];
+        lcs[j+1] = lcs[j];
+      }
+      if (colStr[i] === rowStr[j] && (table[prev][j] + score) > table[cur][j+1] ) {
+        table[cur][j+1] = table[prev][j] + score;
+        lcs[j+1] = lcs[j] + rowStr[j];
+      }
+    }
+    cur = (cur + 1) % 2;
+    prev = (prev + 1) % 2;
+  }
+  return {str:lcs.pop(), score:table[prev].pop()};
+};
+
+let signatureScore = function(str) {
+  return Array.prototype.reduce.call(str,function(pre, char) {
+    switch(char) {
+      case '[':
+        pre += 1;
+        break;
+      case '.':
+        pre += 10;
+        break;
+      case '#':
+        pre += 100;
+        break;
+    }
+    return pre;
+  },1);
+}
 
 //lcs2(urls[0],urls[1]);
 //return;
 
 let nodeFromElem = function(elem) {
+  let tag = elem.tagName.toLowerCase();
+  let shaHash = crypto.createHash('sha1');
+  shaHash.update(Date.now() + tag + Math.random());
   let node = {
-    tagName: elem.tagName.toLowerCase(),
+    hash: shaHash.digest('hex'),
+    tagName: tag,
     id: elem.id,
     classList: elem.classList || [],
     children: [],
     signature: '',
-    parent:undefined
+    parent: undefined
   }
   node.classList = node.classList.sort();
   return node;
@@ -201,7 +278,7 @@ let generateSignature = function(leafHeap) {
         }
         return pre;
       },[]);
-      n.signature = selfSignature(n, selfSignOptions)
+      n.signature = selfSignature(n, selfSignOptions);
       if ( n.children.length ) {
         n.signature += '[' + Object.keys(childSignature).sort().join(',') + ']';
       }
@@ -223,22 +300,30 @@ let processDom = function(errors, window) {
   let document = window.document;
   let page = {
     url: window.location.href,
-    html: document.body.parentElement.outerHTML,
-    document: window.document,
     cluster: undefined,
     css: [],
     js: [],
     tree: {}
   };
+  if ( argv.keepHtml ) {
+    page.html = document.body.parentElement.outerHTML;
+  }
   page.css = Array.prototype.reduce.call(document.getElementsByTagName('link'), function(pre, el) {
     if ( el.rel === 'stylesheet' ) {
       pre.push(el.href);
     }
     return pre;
   },[]);
-  page.js = Array.prototype.map.call(document.getElementsByTagName('script'), function(el) {
-    return el.href;
-  });
+  page.js = Array.prototype.reduce.call(
+    document.getElementsByTagName('script'),
+    function( pre, el ) {
+      if ( el.src ) {
+        pre.push(el.src);
+      }
+      return pre;
+    },
+    []
+  );
   let root = nodeFromElem(document.body);
   let queue = [{elem:document.body, node:root, depth:0}];
   while ( queue.length ) {
@@ -251,6 +336,7 @@ let processDom = function(errors, window) {
       }
       let node = nodeFromElem(q.elem.children[i]);
       node.parent = q.node;
+      node.parentHash = q.node.hash;
       q.node.children.push(node);
       queue.push({elem:elem, node:node, depth:depth});
     }
@@ -260,10 +346,22 @@ let processDom = function(errors, window) {
   }
   page.tree = root;
   generateSignature(leafHeap);
+  page.score = signatureScore(page.tree.signature);
   pages.push(page);
   //log(root.signature);
   if ( pages.length === urls.length ) {
-    comparePage();
+    if ( argv.outputTree ) {
+      fs.writeFile(argv.outputTree,
+        JSON.stringify(pages, function(key, value) {
+          if ( key === 'parent' ) {
+            return undefined;
+          } else {
+            return value;
+          }
+        })
+      );
+    }
+    //comparePage();
   }
   //log(util.inspect(page.tree, {depth: 5}));
 }
@@ -274,16 +372,20 @@ let comparePage = function() {
     for ( let j = i + 1; j < pages.length ; j++) {
       let pj = pages[j];
       log('pi: ' + pi.url);
-      log('pi.signature length: ' + pi.tree.signature.length);
+      log('pi.signature length: ' + pi.tree.signature.replace(/\]/g,'').length);
       log('pj: ' + pj.url);
-      log('pj.signature length: ' + pj.tree.signature.length);
-      //log(lcs0(pi.tree.signature, pj.tree.signature));
+      log('pj.signature length: ' + pj.tree.signature.replace(/\]/g,'').length);
       //let str1 = lcs1(pi.tree.signature, pj.tree.signature);
-      let str2 = lcs2(pi.tree.signature, pj.tree.signature);
-      //log(str1);
-      log(str2);
+      let obj = lcs(pi.tree.signature, pj.tree.signature);
+      log(obj.score);
+      //log(obj.str);
       //log(str1.length);
-      log(str2.length);
+      obj = lcsTokenize(pi.tree.signature, pj.tree.signature);
+      log(signatureScore(obj.str));
+      obj = lcsWeighted(pi.tree.signature, pj.tree.signature);
+      log(pi.score, pj.score);
+      log(obj.score);
+     // log(obj.str);
       //log(lcs_greedy(pi.tree.signature, pj.tree.signature).length);
     }
   }
@@ -297,6 +399,7 @@ for ( let i = 0; i < urls.length ; i++ ) {
 }
 
 }());
+
 /*
 let Crawler = require("simplecrawler");
 
