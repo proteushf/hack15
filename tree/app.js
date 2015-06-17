@@ -354,8 +354,8 @@ let processDom = function(errors, window) {
   pages.push(page);
   //log(root.signature);
   if ( pages.length === urls.length ) {
-    if ( argv.outputTree ) {
-      fs.writeFile(argv.outputTree,
+    if ( argv.saveTree ) {
+      fs.writeFile(argv.saveTree,
         JSON.stringify(pages, function(key, value) {
           if ( key === 'parent' ) {
             return undefined;
