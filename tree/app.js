@@ -4,6 +4,7 @@
 let Crawler = require('simplecrawler');
 
 let crawler = Crawler.crawl('http://www.kohls.com/');
+
 crawler.interval = 1000;
 crawler.maxDepth = 1;
 crawler.discoverResources = false;
@@ -11,16 +12,18 @@ crawler.discoverResources = false;
 crawler.on('fetchcomplete', function(queueItem, responseBuffer, response) {
   console.log('Completed fetching resource:', queueItem.url);
   //let resume = this.wait();
-  filterUrl(responseBuffer, function(foundURLs) {
-    foundURLs.forEach(crawler.queueURL.bind(crawler));
+  //filterUrl(responseBuffer, function(foundURLs) {
+    //foundURLs.forEach(crawler.queueURL.bind(crawler));
     //resume();
-  });
+  //});
 });
 
 crawler.on('complete', function() {
   console.log('complete');
-  console.log(arguments);
-  process.exit(0);
+  //console.log(crawler.crawlIntervalID);
+  //clearInterval(crawler.crawlIntervalID);
+  //crawler.crawlIntervalID = 0;
+  //console.log(crawler.crawlIntervalID);
 });
 
 crawler.start();
@@ -28,6 +31,7 @@ crawler.start();
 let filterUrl = function(data, fn) {
   console.log(data.toString());
 }
+
 return;
 */
 let fs = require('fs');
