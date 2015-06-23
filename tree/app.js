@@ -1,17 +1,17 @@
 'use strict';
 (function() {
 /*
-let Crawler = require('simplecrawler');
+var Crawler = require('simplecrawler');
 
-let crawler = Crawler.crawl('http://www.kohls.com/');
+var crawler = Crawler.crawl('http://www.kohls.com/');
 
-crawler.interval = 1000;
+crawler.interval = 0;
 crawler.maxDepth = 1;
-crawler.discoverResources = false;
+//crawler.discoverResources = false;
 
 crawler.on('fetchcomplete', function(queueItem, responseBuffer, response) {
   console.log('Completed fetching resource:', queueItem.url);
-  //let resume = this.wait();
+  //var resume = this.wait();
   //filterUrl(responseBuffer, function(foundURLs) {
     //foundURLs.forEach(crawler.queueURL.bind(crawler));
     //resume();
@@ -26,39 +26,39 @@ crawler.on('complete', function() {
   //console.log(crawler.crawlIntervalID);
 });
 
-crawler.start();
+//crawler.start();
 
-let filterUrl = function(data, fn) {
+var filterUrl = function(data, fn) {
   console.log(data.toString());
 }
 
 return;
 */
-let fs = require('fs');
-let crypto = require('crypto');
-let util = require('util');
-let jsdom = require('node-jsdom');
-let heapq = require('heap');
-let yargs = require('yargs');
-let log = console.log;
-let pages = [];
-let urls = [
+var fs = require('fs');
+var crypto = require('crypto');
+var util = require('util');
+var jsdom = require('node-jsdom');
+var heapq = require('heap');
+var yargs = require('yargs');
+var log = console.log;
+var pages = [];
+var urls = [
   'http://www.kohls.com/catalog/shoes-shoes.jsp?CN=4294719776+4294719777&N=4294719777+4294719776+3000079215&icid=hpmf|mfs5',
   'http://www.kohls.com/sale-event/for-the-home.jsp',
   'http://www.kohls.com/catalog/juniors-plus-dresses-clothing.jsp?CN=4294719935+4294737717+4294719462+4294719810',
   'http://www.kohls.com/sale-event/juniors-teens-clothing.jsp',
   'http://www.kohls.com/catalog.jsp?N=3000080340&icid=hpmf|mfs1'
 ];
-let urlLimit = 1000;
-let crawlDepth = 6;
-let basePage = 'http://www.kohls.com/';
+var urlLimit = 1000;
+var crawlDepth = 6;
+var basePage = 'http://www.kohls.com/';
 
-let argv = yargs.usage('Usage: $0 --save-tree [string] --full-tree --save-doc [string] --local-doc [string] --keep-html').argv;
+var argv = yargs.usage('Usage: $0 --save-tree [string] --full-tree --save-doc [string] --local-doc [string] --keep-html').argv;
 
 log(argv);
 
-let lcs1 = function(x,y) {
-  let s,i,j,m,n,
+var lcs1 = function(x,y) {
+  var s,i,j,m,n,
     lcs=[],row=[],c=[],
     left,diag,latch;
   //make sure shorter string is the column string
@@ -95,8 +95,8 @@ let lcs1 = function(x,y) {
   return lcs.join('');
 };
 
-let signTokenize = function(str) {
-  let last = 0;
+var signTokenize = function(str) {
+  var last = 0;
   return Array.prototype.reduce.call(str, function(pre, char) {
     if ( char === '[' || char === '.' || char === '#' ) {
       pre.push(char);
@@ -109,10 +109,10 @@ let signTokenize = function(str) {
   }, ['']);
 }
 
-let lcs = function(rowStr, colStr) {
-  let cur = 0, prev = 1, i, j;
-  let table = [[],[]];
-  let lcs = [];
+var lcs = function(rowStr, colStr) {
+  var cur = 0, prev = 1, i, j;
+  var table = [[],[]];
+  var lcs = [];
   for (i = 0; i <= rowStr.length; i++) {
     table[0][i] = 0;
     table[1][i] = 0;
@@ -137,10 +137,10 @@ let lcs = function(rowStr, colStr) {
   return {str:lcs.pop(), score:table[prev].pop()};
 };
 
-let lcsTokenize = function(rowStr, colStr) {
-  let cur = 0, prev = 1, i, j;
-  let table = [[],[]];
-  let lcs = [];
+var lcsTokenize = function(rowStr, colStr) {
+  var cur = 0, prev = 1, i, j;
+  var table = [[],[]];
+  var lcs = [];
   rowStr = signTokenize(rowStr);
   colStr = signTokenize(colStr);
   for (i = 0; i <= rowStr.length; i++) {
@@ -167,10 +167,10 @@ let lcsTokenize = function(rowStr, colStr) {
   return {str:lcs.pop(), score:table[prev].pop()};
 };
 
-let lcsWeighted = function(rowStr, colStr) {
-  let cur = 0, prev = 1, i, j;
-  let table = [[],[]];
-  let lcs = [];
+var lcsWeighted = function(rowStr, colStr) {
+  var cur = 0, prev = 1, i, j;
+  var table = [[],[]];
+  var lcs = [];
   rowStr = signTokenize(rowStr);
   colStr = signTokenize(colStr);
   for (i = 0; i <= rowStr.length; i++) {
@@ -179,7 +179,7 @@ let lcsWeighted = function(rowStr, colStr) {
     lcs[i] = '';
   }
   for (i = 0; i < colStr.length; i++) {
-    let score = 1;
+    var score = 1;
     switch(colStr[0]) {
       case '.':
         score = 10;
@@ -206,7 +206,7 @@ let lcsWeighted = function(rowStr, colStr) {
   return {str:lcs.pop(), score:table[prev].pop()};
 };
 
-let signatureScore = function(str) {
+var signatureScore = function(str) {
   return Array.prototype.reduce.call(str,function(pre, char) {
     switch(char) {
       case '[':
@@ -226,11 +226,11 @@ let signatureScore = function(str) {
 //lcs2(urls[0],urls[1]);
 //return;
 
-let nodeFromElem = function(elem) {
-  let tag = elem.tagName.toLowerCase();
-  let shaHash = crypto.createHash('sha1');
+var nodeFromElem = function(elem) {
+  var tag = elem.tagName.toLowerCase();
+  var shaHash = crypto.createHash('sha1');
   shaHash.update(Date.now() + tag + Math.random());
-  let node = {
+  var node = {
     hash: shaHash.digest('hex'),
     tagName: tag,
     id: elem.id,
@@ -243,9 +243,9 @@ let nodeFromElem = function(elem) {
   return node;
 };
 
-let selfSignature = function(node, options) {
-  let s = node.tagName;
-  let op = options || {};
+var selfSignature = function(node, options) {
+  var s = node.tagName;
+  var op = options || {};
   if ( node.id && !op.skipId ) {
     if ( typeof op.getId === 'function' ) {
       s += op.getId(node.id);
@@ -263,18 +263,18 @@ let selfSignature = function(node, options) {
   return s;
 }
 
-let generateSignature = function(leafHeap) {
-  let leaf = leafHeap.pop();
-  let selfSignOptions = {
+var generateSignature = function(leafHeap) {
+  var leaf = leafHeap.pop();
+  var selfSignOptions = {
     getId:function(id) {
       id = id.replace(/_\d+/,'');
       return '#' + id;
     }
   };
   while (leaf) {
-    let n = leaf.node;
+    var n = leaf.node;
     if ( n.signature === '') {
-      let childSignature = {};
+      var childSignature = {};
       n.children = n.children.reduce(function(pre, child) {
         if ( childSignature[child.signature] === undefined ) {
           childSignature[child.signature] = true;
@@ -297,12 +297,12 @@ let generateSignature = function(leafHeap) {
   }
 }
 
-let processDom = function(errors, window) {
-  let leafHeap = new heapq(function(a, b) {
+var processDom = function(errors, window) {
+  var leafHeap = new heapq(function(a, b) {
     return b.depth - a.depth;
   });
-  let document = window.document;
-  let page = {
+  var document = window.document;
+  var page = {
     url: window.location.href,
     cluster: undefined,
     css: [],
@@ -328,17 +328,17 @@ let processDom = function(errors, window) {
     },
     []
   );
-  let root = nodeFromElem(document.body);
-  let queue = [{elem:document.body, node:root, depth:0}];
+  var root = nodeFromElem(document.body);
+  var queue = [{elem:document.body, node:root, depth:0}];
   while ( queue.length ) {
-    let q = queue.shift();
-    let depth = q.depth + 1;
-    for ( let i = 0 ; i < q.elem.children.length ; i++ ) {
-      let elem = q.elem.children[i];
+    var q = queue.shift();
+    var depth = q.depth + 1;
+    for ( var i = 0 ; i < q.elem.children.length ; i++ ) {
+      var elem = q.elem.children[i];
       if ( elem.tagName === 'script' || elem.tagName === 'link' ) {
         continue;
       }
-      let node = nodeFromElem(q.elem.children[i]);
+      var node = nodeFromElem(q.elem.children[i]);
       node.parent = q.node;
       node.parentHash = q.node.hash;
       q.node.children.push(node);
@@ -370,17 +370,17 @@ let processDom = function(errors, window) {
   //log(util.inspect(page.tree, {depth: 5}));
 }
 
-let comparePage = function() {
-  for ( let i = 0; i < pages.length ; i++ ) {
-    let pi = pages[i];
-    for ( let j = i + 1; j < pages.length ; j++) {
-      let pj = pages[j];
+var comparePage = function() {
+  for ( var i = 0; i < pages.length ; i++ ) {
+    var pi = pages[i];
+    for ( var j = i + 1; j < pages.length ; j++) {
+      var pj = pages[j];
       log('pi: ' + pi.url);
       log('pi.signature length: ' + pi.tree.signature.replace(/\]/g,'').length);
       log('pj: ' + pj.url);
       log('pj.signature length: ' + pj.tree.signature.replace(/\]/g,'').length);
-      //let str1 = lcs1(pi.tree.signature, pj.tree.signature);
-      let obj = lcs(pi.tree.signature, pj.tree.signature);
+      //var str1 = lcs1(pi.tree.signature, pj.tree.signature);
+      var obj = lcs(pi.tree.signature, pj.tree.signature);
       log(obj.score);
       //log(obj.str);
       //log(str1.length);
@@ -395,7 +395,7 @@ let comparePage = function() {
   }
 }
 
-for ( let i = 0; i < urls.length ; i++ ) {
+for ( var i = 0; i < urls.length ; i++ ) {
   jsdom.env({
     url: urls[i],
     done: processDom
@@ -404,8 +404,23 @@ for ( let i = 0; i < urls.length ; i++ ) {
 
 }());
 
+var Crawler = {
+  queue:null,
+  baseDomain:null,
+  startUrl:function(url) {
+  },
+  crawl:function() {
+  },
+  getLinks:function() {
+  }
+}
+
+
+
+
+
 /*
-let Crawler = require("simplecrawler");
+var Crawler = require("simplecrawler");
 
 Crawler.crawl("http://www.kohls.com/", function(queueItem){
   console.log("Completed fetching resource:",queueItem.url);
