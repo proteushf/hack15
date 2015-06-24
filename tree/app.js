@@ -50,7 +50,7 @@ var app = {
     }
   },
   parse:function() {
-    var i, config, doc, output = [],
+    var i, config, doc, parsedDoc = [],
         that = this;
     for ( i = 0 ; i < this.allDocs.length ; i++ ) {
       doc = this.allDocs[1];
@@ -58,18 +58,19 @@ var app = {
       config.url = doc.url;
       config.html = doc.html;
       config.done = function (errors, window) {
-        output.push(docProcessor.processDom(errors,window));
-        if ( output.length === that.allDocs.length) {
-          that.emitter.emit('parseDone', output);
+        parsedDoc.push(docProcessor.processDom(errors,window));
+        if ( parsedDoc.length === that.allDocs.length) {
+          that.parsedDoc = parsedDoc;
+          that.emitter.emit('parseDone', parsedDoc);
         }
       }
       jsdom.env(config);
     }
   },
-  saveParsedData:function(output) {
+  saveParsedData:function() {
     if ( argv.saveTree ) {
       fs.writeFile(argv.saveTree,
-        JSON.stringify(output, function(key,value) {
+        JSON.stringify(this.parsedDoc, function(key,value) {
           if ( key === 'parent' ) {
             return undefined;
           } else {
@@ -82,7 +83,7 @@ var app = {
   main:function() {
     var that = this;
     this.emitter.on('docReady', function() { that.parse() });
-    this.emitter.on('parseDone', function(output) { that.saveParsedData(output); });
+    this.emitter.on('parseDone', function() { that.saveParsedData(); });
     this.getDoc();
   }
 };
@@ -158,16 +159,18 @@ var docProcessor = {
       leaf = leafHeap.pop();
     }
   },
-  processDom: function(errors, window) {
-    var leafHeap = new heapq(function(a, b) { return b.depth - a.depth; });
-    var document = window.document;
+  createPage: function(window) {
     var page = {
+      html: undefined,
+      reducedDoc: undefined,
+      idClassSet: undefined,
       url: window.location.href,
       cluster: undefined,
       css: [],
       js: [],
       tree: {}
     };
+    var document = window.document;
     if ( argv.keepHtml ) {
       page.html = document.body.parentElement.outerHTML;
     }
@@ -183,8 +186,15 @@ var docProcessor = {
         }
         return pre;
     }, []);
+    return page;
+  },
+  processDom: function(errors, window) {
+    var leafHeap = new heapq(function(a, b) { return b.depth - a.depth; });
+    var document = window.document;
+    var page = this.createPage(window);
     var root = this.nodeFromElem(document.body);
     var queue = [{elem:document.body, node:root, depth:0}];
+    var idAndClassSet = {};
     while ( queue.length ) {
       var q = queue.shift();
       var depth = q.depth + 1;

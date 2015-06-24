@@ -42,8 +42,6 @@ CrawlQueue.prototype = {
   },
   take:function(idx) {
     var q = this.queue[idx];
-    console.log('take idx: ' + idx);
-    console.log(q);
     this.hash[q.url] = true;
     this.queue.splice(idx,1);
     return q;
