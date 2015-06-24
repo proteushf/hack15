@@ -56,6 +56,7 @@ Crawler.prototype = {
   host:null,
   baseUrl:null,
   depthLimit:5,
+  sleepInterval: 1,
   sampling:true,
   pageLimit:50,
   pageCount:0,
@@ -98,7 +99,7 @@ Crawler.prototype = {
         url:q.url,
         done: function(errors, window) {
           var document, urls;
-          console.log('done: ' + window.location.href);
+          console.log('done ' + that.pageCount + ': ' + window.location.href);
           if ( errors ) {
             console.log('error on url: ' + window.location.href);
             console.log(errors);
@@ -107,7 +108,9 @@ Crawler.prototype = {
           urls = that._getLinks(window.document);
           that.queue.pushAry(urls, q.depth + 1);
           that.emit('pageLoaded', window);
-          that._crawl();
+          setTimeout(function() {
+            that._crawl();
+          }, that.sleepInterval * 1000);
         }
       });
     } else {

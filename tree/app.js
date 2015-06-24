@@ -10,7 +10,7 @@ var _ = require('lodash-node');
 var Parser = require('./parser.js');
 var Crawler = require('./crawler.js');
 
-var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --full-tree --keep-html --load-data [string] --save-cluster [string]').argv;
+var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --no-tree --full-tree --keep-html --load-data [string] --save-cluster [string]').argv;
 
 var app = {
   emitter:new EventEmitter(),
@@ -24,6 +24,11 @@ var app = {
     }
 
     var processedPage = [];
+
+    if ( argv.saveDoc ) {
+      crawler.on('pageLoaded', function(window) {
+      });
+    }
 
     crawler.on('done',function() {
       if ( argv.saveDoc ) {
@@ -53,6 +58,11 @@ var app = {
   saveParsedData:function(filename) {
     fs.writeFile(filename,
       JSON.stringify(this.parsedDoc, function(key,value) {
+        if ( argv.noTree ) {
+          if ( key === 'tree' ) {
+            return undefined;
+          }
+        }
         if ( key === 'parent' ) {
           return undefined;
         } else {
