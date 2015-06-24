@@ -130,6 +130,7 @@ Crawler.prototype = {
 };
 
 Crawler.prototype.__proto__ = EventEmitter.prototype;
+
 module.exports = {
   getCrawler:function() {
     return new Crawler();
