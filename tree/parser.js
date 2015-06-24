@@ -78,6 +78,8 @@ var Parser = {
       html: undefined,
       reducedDoc: undefined,
       idClassSet: {},
+      idSet: {},
+      classSet: {},
       url: window.location.href,
       cluster: undefined,
       css: [],
@@ -106,10 +108,12 @@ var Parser = {
     var i;
     if ( elem.id ) {
       page.idClassSet['#'+elem.id] = true;
+      page.idSet['#'+elem.id] = true;
     }
     if ( elem.classList && elem.classList.length ) {
       for ( i = 0 ; i < elem.classList.length ; i++) {
         page.idClassSet[elem.classList[i]] = true;
+        page.classSet[elem.classList[i]] = true;
       }
     }
   },

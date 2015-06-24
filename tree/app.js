@@ -75,7 +75,7 @@ var app = {
     var i, config, doc, parsedDoc = [],
         that = this;
     for ( i = 0 ; i < this.allDocs.length ; i++ ) {
-      doc = this.allDocs[1];
+      doc = this.allDocs[i];
       config = {};
       config.url = doc.url;
       config.html = doc.html;
@@ -107,6 +107,7 @@ var app = {
     }
   },
   classify:function() {
+    var matrix = analyzer.jaccardMatrix(this.parsedDoc);
   },
   main:function() {
     var that = this;
@@ -126,13 +127,23 @@ var app = {
 
 app.main();
 
-var cluster = {
-  jaccard:function(a,b) {
+var analyzer = {
+  jaccard: function(a,b) {
     var factor = _.intersection(a,b).length,
         divisor = _.union(a,b).length;
     return factor / divisor;
   },
-  jaccardMatrix:function() {
+  jaccardMatrix: function(parsedDoc) {
+    var matrix = [], i, j, score;
+    for ( i = 0 ; i < parsedDoc.length; i++) {
+      matrix.push([]);
+    }
+    for ( i = 0 ; i < parsedDoc.length; i++) {
+      for ( j = 0 ; j < parsedDoc.length; j++) {
+        //score = 
+        //matrix[i][j] = 
+      }
+    }
   },
   clique:function() {
   }
