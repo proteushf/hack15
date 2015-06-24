@@ -17,7 +17,9 @@ var app = {
   crawl:function() {
     var that = this;
     var crawler = Crawler.getCrawler();
-
+    
+    //var urls = [];
+    //crawler.fixQueue(urls);
     crawler.setStartUrl(argv.crawl);
     if ( argv.pageLimit && typeof argv.pageLimit === 'number' ) {
       crawler.pageLimit = argv.pageLimit;
@@ -107,7 +109,15 @@ var app = {
     }
   },
   classify:function() {
-    var matrix = analyzer.jaccardMatrix(this.parsedDoc);
+    return;
+    var i, matrix = analyzer.jaccardMatrix(this.parsedDoc);
+    for ( i = 0; i < this.parsedDoc.length; i++) {
+      console.log('i: ' + i + ', url: ' + this.parsedDoc[i].url);
+      console.log(matrix[i].reduce(function(pre, num) {
+        pre += num.toPrecision(4) + ', ';
+        return pre;
+      },''));
+    }
   },
   main:function() {
     var that = this;
@@ -139,11 +149,14 @@ var analyzer = {
       matrix.push([]);
     }
     for ( i = 0 ; i < parsedDoc.length; i++) {
-      for ( j = 0 ; j < parsedDoc.length; j++) {
-        //score = 
-        //matrix[i][j] = 
+      for ( j = i ; j < parsedDoc.length; j++) {
+        score = this.jaccard(Object.keys(parsedDoc[i].idClassSet), Object.keys(parsedDoc[j].idClassSet));
+        console.log('i: ' + i + ', j: ' + j + ', score: ' + score);
+        matrix[i][j] = score;
+        matrix[j][i] = score;
       }
     }
+    return matrix;
   },
   clique:function() {
   }

@@ -73,14 +73,26 @@ Crawler.prototype = {
       this.setStartUrl(url);
     }
   },
+  fixQueue:function(urls) {
+    this.test = true;
+    this.testQueue = urls;
+  },
   setStartUrl:function(baseUrl) {
     this.baseUrl = URL.parse(baseUrl);
   },
   initCrawl:function() {
+    var i;
     this.queue = new CrawlQueue();
     this.queue.push(this.baseUrl.href, 0);
     this.pageCount = 0;
     this.allDocs = [];
+    if ( this.test ) {
+      for ( i = 0 ; i < this.testQueue.length; i++) {
+        this.queue.pushAry(this.testQueue,0);
+      }
+      this.pageLimit = this.testQueue.length;
+      this.sampling = false;
+    }
   },
   start:function() {
     this.initCrawl();
