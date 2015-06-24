@@ -115,8 +115,8 @@ var app = {
     }
     this.emitter.on('docReady', function() { that.parse() });
     this.emitter.on('dataReady', function() { that.classify(); });
-    this.emitter.on('clusterReady', function() { that.saveCluser(); });
-    if ( argv.crawl || agrv.loadDoc ) {
+    //this.emitter.on('clusterReady', function() { that.saveCluset(); });
+    if ( argv.crawl || argv.loadDoc ) {
       this.getDoc();
     } else if ( argv.loadData ) {
       this.getData();
@@ -135,7 +135,7 @@ var cluster = {
   jaccardMatrix:function() {
   },
   clique:function() {
-  },
+  }
 };
 
 }());
