@@ -108,7 +108,7 @@ Crawler.prototype = {
           that.allDocs.push({url:window.location.href, html:window.document.body.parentElement.outerHTML});
           urls = that._getLinks(window.document);
           that.queue.pushAry(urls, q.depth + 1);
-          that.eimit('pageLoaded', window);
+          that.emit('pageLoaded', window);
           that._crawl();
         }
       });
