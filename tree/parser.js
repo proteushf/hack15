@@ -7,6 +7,7 @@ var fs = require('fs');
 var Parser = {
   keepHtml: false,
   noTree: false,
+  pageSign: false,
   saveReducedHtmlDir: undefined,
   nodeFromElem: function(elem) {
     var tag = elem.tagName.toLowerCase();
@@ -90,6 +91,7 @@ var Parser = {
       cluster: undefined,
       css: [],
       js: [],
+      signature: undefined,
       tree: {}
     };
     var document = window.document;
@@ -182,6 +184,9 @@ var Parser = {
     this.generateSignature(leafHeap);
     if ( this.saveReducedHtmlDir !== undefined ) {
       fs.writeFileSync(this.saveReducedHtmlDir + '/' + page.url.replace(/\//g,'#') + '_reduce.html' , document.body.parentElement.outerHTML);
+    }
+    if ( this.pageSign ) {
+      page.signature = root.signature;
     }
     if ( this.noTree ) {
       delete page.tree;
