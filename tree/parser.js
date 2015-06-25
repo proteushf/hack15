@@ -2,15 +2,18 @@
 
 var crypto = require('crypto');
 var heapq = require('heap');
+var fs = require('fs');
 
 var Parser = {
   keepHtml: false,
   noTree: false,
+  saveReducedHtmlDir: undefined,
   nodeFromElem: function(elem) {
     var tag = elem.tagName.toLowerCase();
     var shaHash = crypto.createHash('sha1');
     shaHash.update(Date.now() + tag + Math.random());
     var node = {
+      elem:elem,
       hash: shaHash.digest('hex'),
       tagName: tag,
       id: elem.id,
@@ -51,12 +54,14 @@ var Parser = {
     };
     while (leaf) {
       var n = leaf.node;
-      if ( n.signature === '') {
+      if ( n.signature === '' ) {
         var childSignature = {};
         n.children = n.children.reduce(function(pre, child) {
           if ( childSignature[child.signature] === undefined ) {
             childSignature[child.signature] = true;
             pre.push(child);
+          } else {
+            child.elem.parentNode.removeChild(child.elem);
           }
           return pre;
         },[]);
@@ -170,10 +175,15 @@ var Parser = {
         leafHeap.push({node:q.node, depth:depth});
       }
     }
-    if ( !this.noTree ) {
-      page.tree = root;
-      this.generateSignature(leafHeap);
-    } else {
+    if ( this.saveReducedHtmlDir !== undefined ) {
+      fs.writeFileSync(this.saveReducedHtmlDir + '/' + page.url.replace(/\//g,'#') + '_full.html' , document.body.parentElement.outerHTML);
+    }
+    page.tree = root;
+    this.generateSignature(leafHeap);
+    if ( this.saveReducedHtmlDir !== undefined ) {
+      fs.writeFileSync(this.saveReducedHtmlDir + '/' + page.url.replace(/\//g,'#') + '_reduce.html' , document.body.parentElement.outerHTML);
+    }
+    if ( this.noTree ) {
       delete page.tree;
       page.tree = undefined;
     }

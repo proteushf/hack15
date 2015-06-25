@@ -10,7 +10,7 @@ var _ = require('lodash-node');
 var Parser = require('./parser.js');
 var Crawler = require('./crawler.js');
 
-var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --no-tree --full-tree --keep-html --load-data [string] --save-cluster [string]').argv;
+var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --no-tree --full-tree --keep-html --load-data [string] --save-cluster [string] --save-reduced-html [string]').argv;
 
 var app = {
   docCount:0,
@@ -80,7 +80,7 @@ var app = {
             return undefined;
           }
         }
-        if ( key === 'parent' ) {
+        if ( key === 'parent' || key === 'elem' ) {
           return undefined;
         } else {
           return value;
@@ -91,6 +91,7 @@ var app = {
   parseDoc:function(window) {
     var i, config, that = this;
     this.parsedDoc.push(Parser.processDom(window));
+    console.log('parsed: ' + window.location.href);
     if (this.crawlerDone && this.docCount === this.parsedDoc.length ) {
       this.emitter.emit('dataReady', this.parsedDoc);
       if ( argv.saveData ) {
@@ -167,11 +168,15 @@ var app = {
     var that = this;
     this.parsedDoc = [];
     this.docCount = 0;
+    //console.log(argv);
     if ( argv.keepHtml ) {
       Parser.keepHtml = true;
     }
     if ( argv.tree === false) {
       Parser.noTree = true;
+    }
+    if ( argv.saveReducedHtml ) {
+      Parser.saveReducedHtmlDir = argv.saveReducedHtml;
     }
     if ( argv.saveDoc ) {
       fs.closeSync(fs.openSync(argv.saveDoc, 'w'));
