@@ -10,7 +10,7 @@ var _ = require('lodash-node');
 var Parser = require('./parser.js');
 var Crawler = require('./crawler.js');
 
-var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --no-tree --full-tree --keep-html --load-data [string] --save-cluster [string]').argv;
+var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --no-tree --full-tree --keep-html --page-sign --load-data [string] --save-cluster [string] --save-reduced-html [string] --analyze').argv;
 
 var app = {
   docCount:0,
@@ -80,7 +80,7 @@ var app = {
             return undefined;
           }
         }
-        if ( key === 'parent' ) {
+        if ( key === 'parent' || key === 'elem' ) {
           return undefined;
         } else {
           return value;
@@ -91,6 +91,7 @@ var app = {
   parseDoc:function(window) {
     var i, config, that = this;
     this.parsedDoc.push(Parser.processDom(window));
+    console.log('parsed: ' + window.location.href);
     if (this.crawlerDone && this.docCount === this.parsedDoc.length ) {
       this.emitter.emit('dataReady', this.parsedDoc);
       if ( argv.saveData ) {
@@ -150,9 +151,19 @@ var app = {
       this.parseAll();
     }
   },
-  classify:function() {
-    return;
-    var i, matrix = analyzer.similarityMatrix(this.parsedDoc);
+  analyze:function() {
+    var i,
+        matrix = analyzer.similarityMatrix(this.parsedDoc);
+    console.log('Class Id Set Similarity');
+    for ( i = 0; i < this.parsedDoc.length; i++) {
+      console.log('\ni: ' + i + ', url: ' + this.parsedDoc[i].url);
+      console.log(matrix[i].reduce(function(pre, num, idx) {
+        pre += idx + ': ' + num.toPrecision(4) + ', ';
+        return pre;
+      },''));
+    }
+    console.log('\nLCS');
+    matrix = analyzer.lcsMatrix(this.parsedDoc);
     for ( i = 0; i < this.parsedDoc.length; i++) {
       console.log('\ni: ' + i + ', url: ' + this.parsedDoc[i].url);
       console.log(matrix[i].reduce(function(pre, num, idx) {
@@ -167,11 +178,18 @@ var app = {
     var that = this;
     this.parsedDoc = [];
     this.docCount = 0;
+    //console.log(argv);
     if ( argv.keepHtml ) {
       Parser.keepHtml = true;
     }
     if ( argv.tree === false) {
       Parser.noTree = true;
+    }
+    if ( argv.pageSign ) {
+      Parser.pageSign = true;
+    }
+    if ( argv.saveReducedHtml ) {
+      Parser.saveReducedHtmlDir = argv.saveReducedHtml;
     }
     if ( argv.saveDoc ) {
       fs.closeSync(fs.openSync(argv.saveDoc, 'w'));
@@ -180,7 +198,11 @@ var app = {
       fs.closeSync(fs.openSync(argv.saveData, 'w'));
     }
     this.emitter.on('docReady', function() { that.parseAll() });
-    this.emitter.on('dataReady', function() { that.classify(); });
+    this.emitter.on('dataReady', function() {
+      if ( argv.analyze ) {
+        that.analyze();
+      }
+    });
     //this.emitter.on('clusterReady', function() { that.saveCluset(); });
     if ( argv.crawl || argv.loadDoc ) {
       this.getDoc();
@@ -213,7 +235,49 @@ var analyzer = {
     }
     return matrix;
   },
-  clique:function() {
+  lcs: function(rowStr, colStr) {
+    var cur = 0, prev = 1, i, j, length, score;
+    var table = [[],[]];
+    var lcs = [];
+    for (i = 0; i <= rowStr.length; i++) {
+      table[0][i] = 0;
+      table[1][i] = 0;
+      lcs[i] = '';
+    }
+    for (i = 0; i < colStr.length; i++) {
+      for (j = 0; j < rowStr.length; j++) {
+        if ( table[prev][j+1] > table[cur][j] ) {
+          table[cur][j+1] = table[prev][j+1];
+        } else {
+          table[cur][j+1] = table[cur][j];
+          lcs[j+1] = lcs[j];
+        }
+        if (colStr[i] === rowStr[j] && (table[prev][j] + 1) > table[cur][j+1] ) {
+          table[cur][j+1] = table[prev][j] + 1;
+          lcs[j+1] = lcs[j] + rowStr[j];
+        }
+      }
+      cur = (cur + 1) % 2;
+      prev = (prev + 1) % 2;
+    }
+    length = table[prev].pop();
+    score = length / Math.max(rowStr.length, colStr.length);
+    return {str:lcs.pop(), length:table[prev].pop(), score:score};
+  },
+  lcsMatrix:function(parsedDoc) {
+    var matrix =[], i, j, result;
+    for ( i = 0 ; i < parsedDoc.length; i++) {
+      matrix.push([]);
+    }
+    for ( i = 0 ; i < parsedDoc.length; i++) {
+      for ( j = i ; j < parsedDoc.length; j++) {
+        result = this.lcs(parsedDoc[i].signature, parsedDoc[j].signature);
+        //console.log('i: ' + i + ', j: ' + j + ', score: ' + score);
+        matrix[i][j] = result.score;
+        matrix[j][i] = result.score;
+      }
+    }
+    return matrix;
   }
 };
 

@@ -11,7 +11,6 @@ from subprocess import call
 import os, shutil
 from snapshot import get_screen_shot
 
-
 #for edit distance
 def construct_node(tree, level, threshold = 1000):
   root=Node(tree['tagName'])
@@ -168,6 +167,7 @@ def main(argv):
   except getopt.GetoptError:
 #      print 'generate_prod_dedup_valid_uids.py -m <merchant_id> -n <num of users having 3 more views> -p <prefix of uids>'
       sys.exit(2)
+
 
   file = '/Users/ENG-Mac/Work/hackathon_2015/git_folder/hack15/tree/data/50_f21_data.json'
   sim = 'set'
