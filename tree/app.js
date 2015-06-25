@@ -218,7 +218,32 @@ var analyzer = {
     }
     return matrix;
   },
-  clique:function() {
+  lcs: function(rowStr, colStr) {
+    var cur = 0, prev = 1, i, j;
+    var table = [[],[]];
+    var lcs = [];
+    for (i = 0; i <= rowStr.length; i++) {
+      table[0][i] = 0;
+      table[1][i] = 0;
+      lcs[i] = '';
+    }
+    for (i = 0; i < colStr.length; i++) {
+      for (j = 0; j < rowStr.length; j++) {
+        if ( table[prev][j+1] > table[cur][j] ) {
+          table[cur][j+1] = table[prev][j+1];
+        } else {
+          table[cur][j+1] = table[cur][j];
+          lcs[j+1] = lcs[j];
+        }
+        if (colStr[i] === rowStr[j] && (table[prev][j] + 1) > table[cur][j+1] ) {
+          table[cur][j+1] = table[prev][j] + 1;
+          lcs[j+1] = lcs[j] + rowStr[j];
+        }
+      }
+      cur = (cur + 1) % 2;
+      prev = (prev + 1) % 2;
+    }
+    return {str:lcs.pop(), score:table[prev].pop()};
   }
 };
 
