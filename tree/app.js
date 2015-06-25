@@ -13,11 +13,13 @@ var Crawler = require('./crawler.js');
 var argv = yargs.usage('Usage: $0 --crawl [string] --page-limit [num] --save-doc [string] --load-doc [string] --save-data [string] --no-tree --full-tree --keep-html --load-data [string] --save-cluster [string]').argv;
 
 var app = {
+  docCount:0,
+  crawlerDone:false,
   emitter:new EventEmitter(),
   crawl:function() {
     var that = this;
     var crawler = Crawler.getCrawler();
-    
+
     //var urls = [];
     //crawler.fixQueue(urls);
     crawler.setStartUrl(argv.crawl);
@@ -27,17 +29,30 @@ var app = {
 
     var processedPage = [];
 
-    if ( argv.saveDoc ) {
-      crawler.on('pageLoaded', function(window) {
-      });
-    }
+    crawler.on('pageLoaded', function(window) {
+      var doc = {url:window.location.href, html:window.document.body.parentElement.outerHTML};
+      if ( argv.saveDoc) {
+        fs.appendFileSync(
+          argv.saveDoc + '.row',
+          JSON.stringify(doc)
+        );
+      }
+      that.docCount += 1;
+      if ( that.docCount === crawler.pageLimit) {
+        that.crawlerDone = true;
+      }
+      that.parseDoc(window);
+      window.close();
+    });
 
-    crawler.on('done',function() {
+    crawler.on('done', function() {
+      /*
       if ( argv.saveDoc ) {
         fs.writeFile(argv.saveDoc,JSON.stringify(crawler.allDocs));
       }
       that.allDocs = crawler.allDocs;
       that.emitter.emit('docReady', that.allDocs);
+      */
     });
     crawler.start();
   },
@@ -57,9 +72,9 @@ var app = {
       console.error('ERROR: No starting url for crawler (--crawl STARTING_URL) or load local document location --load-doc PATH_TO_FILE');
     }
   },
-  saveParsedData:function(filename) {
+  saveParsedData:function(filename, data) {
     fs.writeFile(filename,
-      JSON.stringify(this.parsedDoc, function(key,value) {
+      JSON.stringify(data, function(key,value) {
         if ( argv.noTree ) {
           if ( key === 'tree' ) {
             return undefined;
@@ -73,7 +88,34 @@ var app = {
       })
     );
   },
-  parse:function() {
+  parseDoc:function(window) {
+    var i, config, that = this;
+    this.parsedDoc.push(Parser.processDom(window));
+    if (this.crawlerDone && this.docCount === this.parsedDoc.length ) {
+      this.emitter.emit('dataReady', this.parsedDoc);
+      if ( argv.saveData ) {
+        this.saveParsedData(argv.saveData + '.row', this.parsedDoc);
+      }
+    }
+    /*
+    config = {};
+    config.url = doc.url;
+    config.html = doc.html;
+    config.done = function (errors, window) {
+      that.parsedDoc.push(Parser.processDom(errors,window));
+      console.log('Parsed: ' + window.location.href);
+      if (that.crawlerDone && that.docCount === that.parsedDoc.length ) {
+        that.emitter.emit('dataReady', that.parsedDoc);
+        if ( argv.saveData ) {
+          that.saveParsedData(argv.saveData + '.row', that.parsedDoc);
+        }
+      }
+      window.close();
+    };
+    jsdom.env(config);
+    */
+  },
+  parseAll:function() {
     var i, config, doc, parsedDoc = [],
         that = this;
     for ( i = 0 ; i < this.allDocs.length ; i++ ) {
@@ -86,7 +128,7 @@ var app = {
         if ( parsedDoc.length === that.allDocs.length) {
           that.parsedDoc = parsedDoc;
           if ( argv.saveData ) {
-            that.saveParsedData(argv.saveData);
+            that.saveParsedData(argv.saveData, that.parsedDoc);
           }
           that.emitter.emit('dataReady', parsedDoc);
         }
@@ -105,7 +147,7 @@ var app = {
         that.emitter.emit('dataReady', that.parsedDoc);
       });
     } else if ( this.allDocs ) {
-      this.parse();
+      this.parseAll();
     }
   },
   classify:function() {
@@ -118,15 +160,26 @@ var app = {
         return pre;
       },''));
     }
-    console.log(Object.keys(this.parsedDoc[4].idClassSet).sort());
-    console.log(Object.keys(this.parsedDoc[5].idClassSet).sort());
+    //console.log(Object.keys(this.parsedDoc[4].idClassSet).sort());
+    //console.log(Object.keys(this.parsedDoc[3].idClassSet).sort());
   },
   main:function() {
     var that = this;
+    this.parsedDoc = [];
+    this.docCount = 0;
     if ( argv.keepHtml ) {
       Parser.keepHtml = true;
     }
-    this.emitter.on('docReady', function() { that.parse() });
+    if ( argv.tree === false) {
+      Parser.noTree = true;
+    }
+    if ( argv.saveDoc ) {
+      fs.closeSync(fs.openSync(argv.saveDoc + '.row', 'w'));
+    }
+    if ( argv.saveData ) {
+      fs.closeSync(fs.openSync(argv.saveData + '.row', 'w'));
+    }
+    this.emitter.on('docReady', function() { that.parseAll() });
     this.emitter.on('dataReady', function() { that.classify(); });
     //this.emitter.on('clusterReady', function() { that.saveCluset(); });
     if ( argv.crawl || argv.loadDoc ) {
@@ -153,7 +206,7 @@ var analyzer = {
     for ( i = 0 ; i < parsedDoc.length; i++) {
       for ( j = i ; j < parsedDoc.length; j++) {
         score = this.similarity(Object.keys(parsedDoc[i].idClassSet), Object.keys(parsedDoc[j].idClassSet));
-        console.log('i: ' + i + ', j: ' + j + ', score: ' + score);
+        //console.log('i: ' + i + ', j: ' + j + ', score: ' + score);
         matrix[i][j] = score;
         matrix[j][i] = score;
       }

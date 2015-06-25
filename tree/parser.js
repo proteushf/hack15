@@ -5,6 +5,7 @@ var heapq = require('heap');
 
 var Parser = {
   keepHtml: false,
+  noTree: false,
   nodeFromElem: function(elem) {
     var tag = elem.tagName.toLowerCase();
     var shaHash = crypto.createHash('sha1');
@@ -143,7 +144,7 @@ var Parser = {
       }
     }
   },
-  processDom: function(errors, window) {
+  processDom: function(window) {
     var leafHeap = new heapq(function(a, b) { return b.depth - a.depth; });
     var document = window.document;
     var page = this.createPage(window);
@@ -169,8 +170,13 @@ var Parser = {
         leafHeap.push({node:q.node, depth:depth});
       }
     }
-    page.tree = root;
-    this.generateSignature(leafHeap);
+    if ( !this.noTree ) {
+      page.tree = root;
+      this.generateSignature(leafHeap);
+    } else {
+      delete page.tree;
+      page.tree = undefined;
+    }
     return page;
     page.score = signatureScore(page.tree.signature);
     pages.push(page);
