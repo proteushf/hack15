@@ -109,6 +109,7 @@ var app = {
     }
   },
   classify:function() {
+    return;
     var i, matrix = analyzer.similarityMatrix(this.parsedDoc);
     for ( i = 0; i < this.parsedDoc.length; i++) {
       console.log('\ni: ' + i + ', url: ' + this.parsedDoc[i].url);
