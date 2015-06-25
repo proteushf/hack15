@@ -110,14 +110,16 @@ var app = {
   },
   classify:function() {
     return;
-    var i, matrix = analyzer.jaccardMatrix(this.parsedDoc);
+    var i, matrix = analyzer.similarityMatrix(this.parsedDoc);
     for ( i = 0; i < this.parsedDoc.length; i++) {
-      console.log('i: ' + i + ', url: ' + this.parsedDoc[i].url);
+      console.log('\ni: ' + i + ', url: ' + this.parsedDoc[i].url);
       console.log(matrix[i].reduce(function(pre, num) {
         pre += num.toPrecision(4) + ', ';
         return pre;
       },''));
     }
+    console.log(Object.keys(this.parsedDoc[1].idClassSet).sort());
+    console.log(Object.keys(this.parsedDoc[2].idClassSet).sort());
   },
   main:function() {
     var that = this;
@@ -138,19 +140,19 @@ var app = {
 app.main();
 
 var analyzer = {
-  jaccard: function(a,b) {
+  similarity: function(a,b) {
     var factor = _.intersection(a,b).length,
         divisor = _.union(a,b).length;
     return factor / divisor;
   },
-  jaccardMatrix: function(parsedDoc) {
+  similarityMatrix: function(parsedDoc) {
     var matrix = [], i, j, score;
     for ( i = 0 ; i < parsedDoc.length; i++) {
       matrix.push([]);
     }
     for ( i = 0 ; i < parsedDoc.length; i++) {
       for ( j = i ; j < parsedDoc.length; j++) {
-        score = this.jaccard(Object.keys(parsedDoc[i].idClassSet), Object.keys(parsedDoc[j].idClassSet));
+        score = this.similarity(Object.keys(parsedDoc[i].idClassSet), Object.keys(parsedDoc[j].idClassSet));
         console.log('i: ' + i + ', j: ' + j + ', score: ' + score);
         matrix[i][j] = score;
         matrix[j][i] = score;

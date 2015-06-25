@@ -104,16 +104,41 @@ var Parser = {
     }, []);
     return page;
   },
+  getAllCSSSeletor:function(document) {
+    var i, j, rules, matches, selectors = {};
+    for (i = 0; i < document.styleSheets.length; i++) {
+      rules = document.styleSheets[i].cssRules;
+      for (j = 0; j < rules.length; j++) {
+        if ( rules[j].selectorText ) {
+          matches = rules[j].selectorText.match(/[#\.][a-zA-Z\d_-]+/g)
+          if ( matches && matches.length ) {
+            matches.map(function(selector) {
+              selectors[selector] = true;
+            });
+          }
+        }
+      }
+    }
+    return selectors;
+  },
   addIdClassSet: function(page, elem) {
     var i;
-    if ( elem.id ) {
+    if ( elem.id && this.selectorSet['#' + elem.id] ) {
       page.idClassSet['#'+elem.id] = true;
       page.idSet['#'+elem.id] = true;
     }
+    if ( elem.className ) {
+      elem.classList = elem.className.split(' ');
+      elem.classList = elem.classList.map(function(c) {
+        return '.' + c;
+      });
+    }
     if ( elem.classList && elem.classList.length ) {
       for ( i = 0 ; i < elem.classList.length ; i++) {
-        page.idClassSet[elem.classList[i]] = true;
-        page.classSet[elem.classList[i]] = true;
+        if ( this.selectorSet[elem.classList[i]] ) {
+          page.idClassSet[elem.classList[i]] = true;
+          page.classSet[elem.classList[i]] = true;
+        }
       }
     }
   },
@@ -123,7 +148,7 @@ var Parser = {
     var page = this.createPage(window);
     var root = this.nodeFromElem(document.body);
     var queue = [{elem:document.body, node:root, depth:0}];
-    var idAndClassSet = {};
+    this.selectorSet = this.getAllCSSSeletor(window.document);
     while ( queue.length ) {
       var q = queue.shift();
       var depth = q.depth + 1;
