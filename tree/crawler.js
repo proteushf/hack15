@@ -8,6 +8,7 @@ var CrawlQueue = function() {
 };
 
 CrawlQueue.prototype = {
+  queueLimit:800,
   init:function() {
     this.queue = [];
     this.hash = {};
@@ -21,10 +22,22 @@ CrawlQueue.prototype = {
     }
   },
   push:function(url, depth) {
+    if ( this.queue.length > this.queueLimit ) {
+      this._randomRemove();
+    }
     if ( this.hash[url] === undefined ) {
       this.queue.push({url:url, depth:depth});
       this.hash[url] = depth;
     }
+  },
+  _randomRemove:function() {
+    var idx, q;
+    do {
+      idx = Math.floor(this.queue.length * Math.random());
+      q = this.queue[idx];
+    } while (this.hash[q.url] === true);
+    delete this.hash[q.url]
+    this.queue.splice(idx,1);
   },
   pop:function() {
     return this.take(this.queue.length - 1);
@@ -60,7 +73,7 @@ Crawler.prototype = {
   sampling:true,
   pageLimit:50,
   pageCount:0,
-  allDocs:[],
+  //allDocs:[],
   setConfig:function(config) {
     config = config || {};
     Object.keys(this).map(function(key) {
@@ -85,7 +98,7 @@ Crawler.prototype = {
     this.queue = new CrawlQueue();
     this.queue.push(this.baseUrl.href, 0);
     this.pageCount = 0;
-    this.allDocs = [];
+    //this.allDocs = [];
     if ( this.test ) {
       for ( i = 0 ; i < this.testQueue.length; i++) {
         this.queue.pushAry(this.testQueue,0);
@@ -116,9 +129,11 @@ Crawler.prototype = {
             console.log('error on url: ' + window.location.href);
             console.log(errors);
           }
-          that.allDocs.push({url:window.location.href, html:window.document.body.parentElement.outerHTML});
+          //that.allDocs.push({url:window.location.href, html:window.document.body.parentElement.outerHTML});
           urls = that._getLinks(window.document);
-          that.queue.pushAry(urls, q.depth + 1);
+          if ( q.depth < that.depthLimit ) {
+            that.queue.pushAry(urls, q.depth + 1);
+          }
           that.emit('pageLoaded', window);
           setTimeout(function() {
             that._crawl();
