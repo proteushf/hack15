@@ -124,6 +124,7 @@ var Parser = {
   addIdClassSet: function(page, elem) {
     var i;
     if ( elem.id && this.selectorSet['#' + elem.id] ) {
+    //if ( elem.id ) {
       page.idClassSet['#'+elem.id] = true;
       page.idSet['#'+elem.id] = true;
     }
@@ -135,10 +136,10 @@ var Parser = {
     }
     if ( elem.classList && elem.classList.length ) {
       for ( i = 0 ; i < elem.classList.length ; i++) {
-        if ( this.selectorSet[elem.classList[i]] ) {
+        //if ( this.selectorSet[elem.classList[i]] ) {
           page.idClassSet[elem.classList[i]] = true;
           page.classSet[elem.classList[i]] = true;
-        }
+        //}
       }
     }
   },

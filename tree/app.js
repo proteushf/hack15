@@ -109,17 +109,16 @@ var app = {
     }
   },
   classify:function() {
-    return;
     var i, matrix = analyzer.similarityMatrix(this.parsedDoc);
     for ( i = 0; i < this.parsedDoc.length; i++) {
       console.log('\ni: ' + i + ', url: ' + this.parsedDoc[i].url);
-      console.log(matrix[i].reduce(function(pre, num) {
-        pre += num.toPrecision(4) + ', ';
+      console.log(matrix[i].reduce(function(pre, num, idx) {
+        pre += idx + ': ' + num.toPrecision(4) + ', ';
         return pre;
       },''));
     }
-    console.log(Object.keys(this.parsedDoc[1].idClassSet).sort());
-    console.log(Object.keys(this.parsedDoc[2].idClassSet).sort());
+    console.log(Object.keys(this.parsedDoc[4].idClassSet).sort());
+    console.log(Object.keys(this.parsedDoc[5].idClassSet).sort());
   },
   main:function() {
     var that = this;
