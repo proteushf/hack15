@@ -33,7 +33,7 @@ var app = {
       var doc = {url:window.location.href, html:window.document.body.parentElement.outerHTML};
       if ( argv.saveDoc) {
         fs.appendFileSync(
-          argv.saveDoc + '.row',
+          argv.saveDoc,
           JSON.stringify(doc)
         );
       }
@@ -94,7 +94,7 @@ var app = {
     if (this.crawlerDone && this.docCount === this.parsedDoc.length ) {
       this.emitter.emit('dataReady', this.parsedDoc);
       if ( argv.saveData ) {
-        this.saveParsedData(argv.saveData + '.row', this.parsedDoc);
+        this.saveParsedData(argv.saveData, this.parsedDoc);
       }
     }
     /*
@@ -174,10 +174,10 @@ var app = {
       Parser.noTree = true;
     }
     if ( argv.saveDoc ) {
-      fs.closeSync(fs.openSync(argv.saveDoc + '.row', 'w'));
+      fs.closeSync(fs.openSync(argv.saveDoc, 'w'));
     }
     if ( argv.saveData ) {
-      fs.closeSync(fs.openSync(argv.saveData + '.row', 'w'));
+      fs.closeSync(fs.openSync(argv.saveData, 'w'));
     }
     this.emitter.on('docReady', function() { that.parseAll() });
     this.emitter.on('dataReady', function() { that.classify(); });
